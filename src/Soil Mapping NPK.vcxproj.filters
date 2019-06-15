@@ -15,6 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Soil Mapping NPK.ino" />
+    <None Include="src.ino" />
   </ItemGroup>
 </Project>
