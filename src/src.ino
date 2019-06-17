@@ -5,13 +5,14 @@
 	Author:     Kim Aurellano
 */
 
-#include <PubSubClient.h>
+#include <MQTTClient.h>
+#include <MQTT.h>
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 
 // ESP8266 interface
 WiFiClient wifiClient;
-PubSubClient client(wifiClient);
+MQTTClient mqttClient;
 
 // WiFi credentials
 const char* SSID = "Xiaomi_0FBC";
@@ -51,12 +52,11 @@ void setup() {
 	Serial.print(F("Device IP: "));
 	Serial.println(WiFi.localIP());
 
-	// MQTT setup
-	client.setServer(MQTT_SERVER, MQTT_PORT);
-	client.setCallback(callback);
+	// MQTT broker connection
+	Serial.print(F("Waiting for MQTT broker connection."));
+	mqttClient.begin(MQTT_SERVER, wifiClient);
 
-	Serial.print(F("Waiting for MQTT connection."));
-	while (!client.connected()) {
+	while (!mqttClient.connect("NodeMCU")) {
 		Serial.print(F("."));
 	}
 	Serial.println(F("OK"));
@@ -76,10 +76,10 @@ void setup() {
 }
 
 void loop() {
-	// Send message to MQTT server
-	client.publish("esp8266", "hello rpi");
-	client.subscribe("esp8266");
-	client.loop();
+	// Publish test topic and message to MQTT broker
+	mqttClient.publish("esp8266", "Hello world");
+	mqttClient.loop();
+	delay(10);
 
 	// Red
 	int r = CheckColor(LOW, LOW);
@@ -99,16 +99,5 @@ int CheckColor(int stateS2, int stateS3) {
 	digitalWrite(S3, stateS3);
 
 	return pulseIn(OUT, LOW);
-}
-
-// Response of MQTT on data sent
-void callback(char* topic, byte* payload, unsigned int length) {
-	Serial.print("Message arrived [");
-	Serial.print(topic);
-	Serial.print("] ");
-	for (int i = 0; i < length; i++) {
-		Serial.print((char)payload[i]);
-	}
-	Serial.println();
 }
 
