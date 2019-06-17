@@ -5,27 +5,24 @@
 	Author:     Kim Aurellano
 */
 
-#include <MySQL_Cursor.h>
-#include <MySQL_Connection.h>
+#include <MQTTClient.h>
+#include <MQTT.h>
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 
-// Change according to your settings
-IPAddress server_addr(192, 168, 0, 1);
-char serverUser[] = "root";	// MySQL user
-char serverPass[] = "pass";	// MySQL pass
-const int PORT = 3306;		// Common port use for MySQL database
-
 // ESP8266 interface
 WiFiClient wifiClient;
-
-// MySQL 
-MySQL_Connection conn(&wifiClient);
-MySQL_Cursor* cursor;
+MQTTClient mqttClient;
 
 // WiFi credentials
 const char* SSID = "Xiaomi_0FBC";
 const char* PASSWORD = "ukesAs!52637";
+
+// MQTT
+const int MQTT_PORT = 1883;
+const char* MQTT_SERVER = "192.168.31.154"; // IP Address of the Raspi
+const char* MQTT_USER = "";
+const char* MQTT_PASS = "";
 
 // TCS3200
 const int S0 = D4;
@@ -34,10 +31,11 @@ const int S2 = D6;
 const int S3 = D7;
 const int OUT = D8;
 
-// Insert query
-char INSERT_SQL[] = "INSERT INTO test_arduino.hello_arduino (message) VALUES ('Hello, Arduino!')";
-
 void setup() {
+	Serial.begin(115200);
+
+	pinMode(LED_BUILTIN, OUTPUT);
+
 	// Connect to WiFi
 	Serial.print(F("Waiting for WiFi connection."));
 	WiFi.begin(SSID, PASSWORD);
@@ -54,11 +52,12 @@ void setup() {
 	Serial.print(F("Device IP: "));
 	Serial.println(WiFi.localIP());
 
-	// Connection to MySQL server
-	Serial.print(F("Connecting to server."));
-	while (!conn.connect(server_addr, PORT, serverUser, serverPass)) {
+	// MQTT broker connection
+	Serial.print(F("Waiting for MQTT broker connection."));
+	mqttClient.begin(MQTT_SERVER, wifiClient);
+
+	while (!mqttClient.connect("NodeMCU")) {
 		Serial.print(F("."));
-		delay(500);
 	}
 	Serial.println(F("OK"));
 
@@ -77,6 +76,11 @@ void setup() {
 }
 
 void loop() {
+	// Publish test topic and message to MQTT broker
+	mqttClient.publish("esp8266", "Hello world");
+	mqttClient.loop();
+	delay(10);
+
 	// Red
 	int r = CheckColor(LOW, LOW);
 	Serial.print(r); Serial.print("\t");
