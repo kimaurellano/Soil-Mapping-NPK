@@ -5,6 +5,7 @@
 	Author:     Kim Aurellano
 */
 
+#include <ArduinoJson.h>
 #include <MQTTClient.h>
 #include <MQTT.h>
 #include <ArduinoJson.h>
@@ -31,19 +32,22 @@ const int S2 = D6;
 const int S3 = D7;
 const int OUT = D8;
 
+//
+const int STATUS_LED = 2;
+
 void setup() {
 	Serial.begin(115200);
 
-	pinMode(LED_BUILTIN, OUTPUT);
+	pinMode(STATUS_LED, OUTPUT);
 
 	// Connect to WiFi
 	Serial.print(F("Waiting for WiFi connection."));
 	WiFi.begin(SSID, PASSWORD);
 	while (WiFi.status() != WL_CONNECTED) {
 		Serial.print(F("."));
-		digitalWrite(LED_BUILTIN, HIGH);
+		digitalWrite(STATUS_LED, HIGH);
 		delay(50);
-		digitalWrite(LED_BUILTIN, LOW);
+		digitalWrite(STATUS_LED, LOW);
 		delay(50);
 	}
 	Serial.println(F("OK"));
@@ -56,7 +60,7 @@ void setup() {
 	Serial.print(F("Waiting for MQTT broker connection."));
 	mqttClient.begin(MQTT_SERVER, wifiClient);
 
-	while (!mqttClient.connect("NodeMCU")) {
+	while (!mqttClient.connect(WiFi.localIP().toString().c_str())) {
 		Serial.print(F("."));
 	}
 	Serial.println(F("OK"));
@@ -76,22 +80,38 @@ void setup() {
 }
 
 void loop() {
-	// Publish test topic and message to MQTT broker
-	mqttClient.publish("esp8266", "Hello world");
+	digitalWrite(STATUS_LED, !WiFi.isConnected());
+
+	// Create JSON object
+	StaticJsonDocument<200> jsonDoc;
+	jsonDoc["SensorID"] = WiFi.localIP().toString();
+	jsonDoc["Nitrogen"] = 0;
+	jsonDoc["Phosphorous"] = 0;
+	jsonDoc["Potassium"] = 0;
+
+	// The data to send
+	String payload;
+	serializeJsonPretty(jsonDoc, payload);
+
+	Serial.println("published at esp8266/dev2 topic");
+	Serial.println(payload);
+
+	// Publish 'esp8266' topic and message to MQTT broker
+	mqttClient.publish("esp8266/dev2", payload); // Provide a json object message
 	mqttClient.loop();
-	delay(10);
+	delay(5000);
 
-	// Red
-	int r = CheckColor(LOW, LOW);
-	Serial.print(r); Serial.print("\t");
+	//// Red
+	//int r = CheckColor(LOW, LOW);
+	//Serial.print(r); Serial.print("\t");
 
-	// Green
-	int g = CheckColor(HIGH, HIGH);
-	Serial.print(g); Serial.print("\t");
+	//// Green
+	//int g = CheckColor(HIGH, HIGH);
+	//Serial.print(g); Serial.print("\t");
 
-	// Blue
-	int b = CheckColor(LOW, HIGH);
-	Serial.println(b);
+	//// Blue
+	//int b = CheckColor(LOW, HIGH);
+	//Serial.println(b);
 }
 
 int CheckColor(int stateS2, int stateS3) {
