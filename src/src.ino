@@ -16,8 +16,8 @@ WiFiClient wifiClient;
 MQTTClient mqttClient;
 
 // WiFi credentials
-const char* SSID = "Xiaomi_0FBC";
-const char* PASSWORD = "ukesAs!52637";
+const char* SSID = "***";
+const char* PASSWORD = "***";
 
 // MQTT
 const int MQTT_PORT = 1883;
